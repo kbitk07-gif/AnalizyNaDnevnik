@@ -6,62 +6,52 @@ interface ParsedValues {
 
 function parseAnalyses(text: string): ParsedValues {
   const values: ParsedValues = {};
-  
-  // Разбиваем текст на блоки по "Подтверждено" или "Получение образца"
   const lines = text.split('\n');
   let currentName = '';
   let currentValue = '';
   let lineIndex = 0;
-  
+
   while (lineIndex < lines.length) {
     const line = lines[lineIndex].trim();
-    
+
     if (line === '' || line === 'Подтверждено' || line === 'Получение образца') {
       lineIndex++;
       continue;
     }
-    
-    // Это название показателя
+
     currentName = line;
     lineIndex++;
-    
-    // Пропускаем пустые строки
+
     while (lineIndex < lines.length && lines[lineIndex].trim() === '') {
       lineIndex++;
     }
-    
-    // Значение
+
     if (lineIndex < lines.length) {
       currentValue = lines[lineIndex].trim();
       lineIndex++;
     }
-    
-    // Пропускаем пустые строки
+
     while (lineIndex < lines.length && lines[lineIndex].trim() === '') {
       lineIndex++;
     }
-    
-    // Пропускаем референсные значения (строка с "-" или "<")
+
     if (lineIndex < lines.length) {
       const refLine = lines[lineIndex].trim();
       if (refLine.includes('-') || refLine.includes('<') || refLine === '') {
         lineIndex++;
       }
     }
-    
-    // Пропускаем единицы измерения
+
     while (lineIndex < lines.length && lines[lineIndex].trim() === '') {
       lineIndex++;
     }
     if (lineIndex < lines.length) {
       const unitLine = lines[lineIndex].trim();
       if (unitLine && unitLine !== 'Подтверждено' && unitLine !== 'Получение образца' && !unitLine.includes('-') && !unitLine.includes('<')) {
-        // Это единица измерения, пропускаем
         lineIndex++;
       }
     }
-    
-    // Пропускаем до "Подтверждено" или "Получение образца"
+
     while (lineIndex < lines.length) {
       const l = lines[lineIndex].trim();
       if (l === 'Подтверждено' || l === 'Получение образца') {
@@ -70,12 +60,12 @@ function parseAnalyses(text: string): ParsedValues {
       }
       lineIndex++;
     }
-    
+
     if (currentName && currentValue) {
       values[currentName] = currentValue;
     }
   }
-  
+
   return values;
 }
 
@@ -92,7 +82,7 @@ function formatOutput(values: ParsedValues): string {
   const hematocrit = get(['Гематокрит']);
   const thrombo = get(['Тромбоциты']);
   const leuko = get(['Лейкоциты']);
-  
+
   const glucose = get(['Глюкоза (сахар крови)', 'Глюкоза']);
   const creatinine = get(['Креатинин']);
   const urea = get(['Мочевина']);
@@ -103,7 +93,7 @@ function formatOutput(values: ParsedValues): string {
   const alt = get(['Аланинаминотрансфераза (АЛТ)', 'АЛТ']);
   const potassium = get(['Калий']);
   const sodium = get(['Натрий']);
-  
+
   const fibrinogen = get(['Определение фибриногена в плазме крови на анализаторе', 'Фибриноген']);
   const aptt = get(['Определение активированного частичного тромбопластинового времени (АЧТВ) в плазме крови на анализато', 'АЧТВ']);
   const pt = get(['Протромбиновое время']);
@@ -116,7 +106,7 @@ function formatOutput(values: ParsedValues): string {
   result += `Гематокрит (Нt):${hematocrit}% `;
   result += `Тромбоциты:${thrombo}×10⁹/л `;
   result += `Лейкоциты:${leuko}×10⁹/л `;
-  
+
   result += `Биохимический анализ крови: `;
   result += `Глюкоза:${glucose}ммоль/л `;
   result += `Креатинин:${creatinine}мкмоль/л `;
@@ -128,7 +118,7 @@ function formatOutput(values: ParsedValues): string {
   result += `АЛТ:${alt}Ед/л `;
   result += `Калий (К):${potassium}ммоль/л `;
   result += `Натрий (Na):${sodium}ммоль/л `;
-  
+
   result += `Коагулограмма: `;
   result += `Фибриноген:${fibrinogen}г/л `;
   result += `АЧТВ:${aptt}секунд `;
@@ -144,6 +134,7 @@ function App() {
   const [outputText, setOutputText] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
+  const [showDeploy, setShowDeploy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleParse = () => {
@@ -172,8 +163,7 @@ function App() {
       };
       reader.readAsDataURL(file);
     });
-    
-    // Сбрасываем input чтобы можно было загрузить те же файлы снова
+
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -200,10 +190,101 @@ function App() {
           <h1 className="text-3xl md:text-4xl font-bold text-indigo-800 mb-2">
             🩺 Анализатор анализов крови
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-3">
             Вставьте результаты анализов и получите форматированный вывод
           </p>
+          <button
+            onClick={() => setShowDeploy(!showDeploy)}
+            className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-5 rounded-full text-sm transition-all shadow-md hover:shadow-lg"
+          >
+            🌐 {showDeploy ? 'Скрыть инструкции' : 'Как опубликовать сайт 24/7?'}
+          </button>
         </div>
+
+        {/* Deploy Instructions */}
+        {showDeploy && (
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border-2 border-green-200">
+            <h2 className="text-2xl font-bold text-green-700 mb-4 flex items-center gap-2">
+              🚀 Как опубликовать сайт бесплатно (24/7)
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Выберите любой из вариантов — все бесплатные, дают постоянную ссылку и работают круглосуточно:
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {/* Netlify */}
+              <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-5 border border-teal-200">
+                <div className="text-3xl mb-2">⚡</div>
+                <h3 className="font-bold text-teal-800 text-lg mb-2">Netlify</h3>
+                <p className="text-sm text-gray-600 mb-3">Самый простой способ. Просто перетащите папку dist/</p>
+                <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
+                  <li>Скачайте папку <code className="bg-white px-1 rounded">dist/</code></li>
+                  <li>Зайдите на <a href="https://app.netlify.com/drop" target="_blank" rel="noopener" className="text-teal-600 underline font-semibold">app.netlify.com/drop</a></li>
+                  <li>Перетащите папку dist/ на страницу</li>
+                  <li>Готово! Получите ссылку вида <code className="bg-white px-1 rounded text-xs">ваш-сайт.netlify.app</code></li>
+                </ol>
+                <a
+                  href="https://app.netlify.com/drop"
+                  target="_blank"
+                  rel="noopener"
+                  className="mt-3 inline-block bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-all"
+                >
+                  Открыть Netlify Drop →
+                </a>
+              </div>
+
+              {/* Vercel */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
+                <div className="text-3xl mb-2">▲</div>
+                <h3 className="font-bold text-gray-800 text-lg mb-2">Vercel</h3>
+                <p className="text-sm text-gray-600 mb-3">Быстрый деплой через GitHub</p>
+                <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
+                  <li>Зарегистрируйтесь на <a href="https://vercel.com" target="_blank" rel="noopener" className="text-blue-600 underline font-semibold">vercel.com</a></li>
+                  <li>Загрузите проект на GitHub</li>
+                  <li>Импортируйте репозиторий в Vercel</li>
+                  <li>Получите ссылку <code className="bg-white px-1 rounded text-xs">ваш-сайт.vercel.app</code></li>
+                </ol>
+                <a
+                  href="https://vercel.com/new"
+                  target="_blank"
+                  rel="noopener"
+                  className="mt-3 inline-block bg-gray-800 hover:bg-gray-900 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-all"
+                >
+                  Открыть Vercel →
+                </a>
+              </div>
+
+              {/* GitHub Pages */}
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5 border border-purple-200">
+                <div className="text-3xl mb-2">🐙</div>
+                <h3 className="font-bold text-purple-800 text-lg mb-2">GitHub Pages</h3>
+                <p className="text-sm text-gray-600 mb-3">Полностью бесплатно через GitHub</p>
+                <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
+                  <li>Создайте репозиторий на GitHub</li>
+                  <li>Загрузите содержимое папки <code className="bg-white px-1 rounded">dist/</code></li>
+                  <li>Settings → Pages → Source: main branch</li>
+                  <li>Ссылка: <code className="bg-white px-1 rounded text-xs">username.github.io/repo</code></li>
+                </ol>
+                <a
+                  href="https://pages.github.com"
+                  target="_blank"
+                  rel="noopener"
+                  className="mt-3 inline-block bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-all"
+                >
+                  Открыть GitHub Pages →
+                </a>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+              <p className="text-sm text-yellow-800">
+                💡 <strong>Рекомендация:</strong> Самый быстрый способ — <strong>Netlify Drop</strong>. 
+                Просто скачайте папку <code className="bg-white px-1 rounded">dist/</code> и перетащите её на страницу. 
+                Ссылка будет доступна сразу и будет работать 24/7 бесплатно.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - Input */}
@@ -240,13 +321,13 @@ function App() {
               <h2 className="text-xl font-semibold text-indigo-700 mb-4 flex items-center gap-2">
                 📷 Фотографии
               </h2>
-              <div 
+              <div
                 className="border-2 border-dashed border-indigo-200 rounded-xl p-8 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <div className="text-4xl mb-2">📸</div>
                 <p className="text-gray-500">Нажмите для загрузки фотографий</p>
-                <p className="text-gray-400 text-sm mt-1">JPG, PNG, GIF</p>
+                <p className="text-gray-400 text-sm mt-1">JPG, PNG, GIF — несколько файлов</p>
               </div>
               <input
                 ref={fileInputRef}
@@ -256,7 +337,7 @@ function App() {
                 onChange={handleImageUpload}
                 className="hidden"
               />
-              
+
               {images.length > 0 && (
                 <div className="mt-4">
                   <div className="flex justify-between items-center mb-3">
@@ -306,11 +387,10 @@ function App() {
                   </div>
                   <button
                     onClick={handleCopy}
-                    className={`w-full font-semibold py-3 px-6 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95 ${
-                      copied 
-                        ? 'bg-green-500 text-white' 
+                    className={`w-full font-semibold py-3 px-6 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95 ${copied
+                        ? 'bg-green-500 text-white'
                         : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                    }`}
+                      }`}
                   >
                     {copied ? '✅ Скопировано!' : '📋 Копировать результат'}
                   </button>
@@ -346,7 +426,7 @@ function App() {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   {(() => {
                     const values = parseAnalyses(inputText);
-                    const displayNames = [
+                    const displayNames: [string, string][] = [
                       ['Гемоглобин', 'Гемоглобин'],
                       ['Эритроциты', 'Эритроциты'],
                       ['Гематокрит', 'Гематокрит'],
@@ -355,8 +435,8 @@ function App() {
                       ['Глюкоза', 'Глюкоза (сахар крови)'],
                       ['Креатинин', 'Креатинин'],
                       ['Мочевина', 'Мочевина'],
-                      ['Билирубин общий', 'Билирубин общий'],
-                      ['Билирубин прямой', 'Билирубин прямой'],
+                      ['Билирубин общ.', 'Билирубин общий'],
+                      ['Билирубин прям.', 'Билирубин прямой'],
                       ['Общий белок', 'Общий белок'],
                       ['АСТ', 'Аспартатаминотрансфераза (АСТ)'],
                       ['АЛТ', 'Аланинаминотрансфераза (АЛТ)'],
@@ -365,7 +445,7 @@ function App() {
                       ['Фибриноген', 'Определение фибриногена в плазме крови на анализаторе'],
                       ['АЧТВ', 'Определение активированного частичного тромбопластинового времени (АЧТВ) в плазме крови на анализато'],
                       ['МНО', 'МНО'],
-                      ['Протромбиновое время', 'Протромбиновое время'],
+                      ['Протр. время', 'Протромбиновое время'],
                       ['ПТИ', 'Протромбиновый индекс'],
                     ];
                     return displayNames.map(([short, full]) => (
@@ -381,6 +461,11 @@ function App() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Footer */}
+        <div className="text-center mt-8 text-gray-400 text-sm">
+          <p>Анализатор анализов крови • Работает локально в браузере • Данные не отправляются на сервер</p>
         </div>
       </div>
     </div>
